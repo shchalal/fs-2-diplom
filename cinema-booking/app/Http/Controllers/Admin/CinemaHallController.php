@@ -1,0 +1,173 @@
+<?php 
+
+namespace App\Http\Controllers\Admin;
+
+use App\Models\Seat;
+use App\Http\Controllers\Controller;
+use App\Models\CinemaHall;
+use Illuminate\Http\Request;
+
+class CinemaHallController extends Controller
+{
+    public function index()
+    {
+        $halls = CinemaHall::all();
+        return view('admin.halls.index', compact('halls'));
+    }
+
+    public function create()
+    {
+        return view('admin.halls.create');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255'
+        ]);
+
+        CinemaHall::create([
+            'name' => $request->name,
+            'rows' => 5,
+            'seats_per_row' => 5,
+        ]);
+
+        return redirect()->back()->with('success', 'Зал создан!');
+    }
+
+   public function toggle(CinemaHall $hall)
+      {
+            if (request()->has('status')) {
+                $hall->is_active = (bool) request('status');
+            } else {
+                $hall->is_active = !$hall->is_active;
+            }
+
+            $hall->save();
+
+            if (request()->ajax()) {
+                return response()->json([
+                    'success'    => true,
+                    'new_status' => $hall->is_active,
+                ]);
+            }
+
+            return back()->with('success', 'Статус обновлён');
+        }  
+
+
+   
+    public function update(Request $request, CinemaHall $hall)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'rows' => 'required|integer|min:1',
+            'seats_per_row' => 'required|integer|min:1',
+        ]);
+
+        
+        $hall->update($request->only('name', 'rows', 'seats_per_row'));
+
+        
+        \App\Models\Seat::where('hall_id', $hall->id)->delete();
+
+        for ($r = 1; $r <= $hall->rows; $r++) {
+            for ($s = 1; $s <= $hall->seats_per_row; $s++) {
+                \App\Models\Seat::create([
+                    'hall_id'     => $hall->id,
+                    'row_number'  => $r,
+                    'seat_number' => $s,
+                    'seat_type'   => 'regular',
+                ]);
+            }
+        }
+
+    return redirect()
+        ->route('admin.halls.index')
+        ->with('success', 'Зал обновлён, схема перестроена!');
+}
+
+
+    public function seats(CinemaHall $hall)
+    {
+        $seats = $hall->seats()
+            ->orderBy('row_number')
+            ->orderBy('seat_number')
+            ->get();
+
+        return response()->json([
+            'rows' => $hall->rows,
+            'seats_per_row' => $hall->seats_per_row,
+            'seats' => $seats
+        ]);
+    }
+
+
+    public function toggleSeat(CinemaHall $hall, Seat $seat)
+    {
+        if ($seat->hall_id !== $hall->id) {
+            return back()->with('error', 'Неверное место');
+        }
+
+        $types = ['regular', 'vip', 'disabled'];
+
+        $currentIndex = array_search($seat->seat_type, $types);
+
+        if ($currentIndex === false) {
+            $currentIndex = 0;
+        }
+
+        $nextIndex = ($currentIndex + 1) % count($types);
+
+        $seat->seat_type = $types[$nextIndex];
+        $seat->save();
+
+        return back()->with('success', 'Тип места изменён');
+    }
+
+    public function delete(Request $request)
+    {
+        $request->validate([
+            'hall_id' => 'required|integer|exists:cinema_halls,id'
+        ]);
+
+        $hall = CinemaHall::find($request->hall_id);
+
+        $hall->seats()->delete();
+        $hall->sessions()->delete();
+
+        $hall->delete();
+
+        return redirect()->back()->with('success', 'Зал удалён!');
+    }
+
+    public function config(CinemaHall $hall)
+    {
+        $seats = $hall->seats()
+            ->orderBy('row_number')
+            ->orderBy('seat_number')
+            ->get();
+
+        return view('admin.halls.config', compact('hall', 'seats'));
+    }
+
+    public function ajaxToggleSeat(CinemaHall $hall, Seat $seat)
+    {
+        if ($seat->hall_id !== $hall->id) {
+            return response()->json(['error' => 'Invalid seat'], 403);
+        }
+
+        $types = ['regular', 'vip', 'disabled'];
+
+        $current = array_search($seat->seat_type, $types);
+        $next = ($current + 1) % count($types);
+
+        $seat->seat_type = $types[$next];
+        $seat->save();
+
+        return response()->json([
+            'success' => true,
+            'new_type' => $seat->seat_type
+        ]);
+    }
+}
