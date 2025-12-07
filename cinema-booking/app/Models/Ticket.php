@@ -10,13 +10,15 @@ class Ticket extends Model
         'session_id',
         'seat_id',
         'booking_code',
+        'order_id',
         'qr_path',
     ];
 
     public function session()
-    {
-        return $this->belongsTo(Session::class);
-    }
+{
+    return $this->belongsTo(\App\Models\MovieSession::class, 'session_id');
+}
+
 
     public function seat()
     {
