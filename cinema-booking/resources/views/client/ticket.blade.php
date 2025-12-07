@@ -37,12 +37,15 @@
         </p>
 
         {{-- Список мест --}}
-        <p class="ticket__info">
+       <p class="ticket__info">
             Места:
             <span class="ticket__details ticket__chairs">
-                {{ $tickets->pluck('seat.seat_number')->join(', ') }}
+                @foreach ($tickets as $ticket)
+                    Ряд {{ $ticket->seat->row_number }}, место {{ $ticket->seat->seat_number }}@if(!$loop->last), @endif
+                @endforeach
             </span>
         </p>
+
 
         {{-- Зал --}}
         <p class="ticket__info">

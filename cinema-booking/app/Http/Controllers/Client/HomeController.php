@@ -6,17 +6,29 @@ use App\Http\Controllers\Controller;
 use App\Models\Movie;
 use App\Models\CinemaHall;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class HomeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-       
-        $movies = Movie::with([
-            'sessions' => function($q) {
-                $q->orderBy('start_time');
-            }
-        ])->get();
+        
+        $date = $request->get('date', Carbon::today()->format('Y-m-d'));
+
+        
+        $dates = collect();
+        for ($i = 0; $i < 7; $i++) {
+            $dates->push(Carbon::today()->addDays($i)->format('Y-m-d'));
+        }
+
+    
+        $movies = Movie::whereHas('sessions', function ($q) use ($date) {
+            $q->where('session_date', $date);
+        })
+            ->with(['sessions' => function ($q) use ($date) {
+                $q->where('session_date', $date)->orderBy('start_time');
+            }])
+            ->get();
 
        
         $halls = CinemaHall::where('is_active', 1)->get();
@@ -24,6 +36,8 @@ class HomeController extends Controller
         return view('client.home', [
             'movies' => $movies,
             'halls'  => $halls,
+            'dates'  => $dates,
+            'date'   => $date
         ]);
     }
 }

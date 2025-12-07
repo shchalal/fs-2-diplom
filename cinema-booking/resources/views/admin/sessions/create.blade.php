@@ -24,10 +24,10 @@
     <input type="datetime-local" name="end_time">
 
     <label>Цена обычного места:</label>
-    <input type="number" name="price_regular">
+    <input type="number" name="price_regular" placeholder="По умолчанию из зала">
 
     <label>Цена VIP:</label>
-    <input type="number" name="price_vip">
+    <input type="number" name="price_vip" placeholder="По умолчанию из зала">
 
     <button>Создать</button>
 </form>

@@ -1,4 +1,4 @@
-<div id="popup-add-seance" class="popup">
+<div id="popup-add-seance" class="popup"> 
     <div class="popup__container">
         <div class="popup__content">
 
@@ -38,14 +38,28 @@
                         <input class="conf-step__input" type="time" name="start_time" required>
                     </label>
 
+                 
                     <label class="conf-step__label conf-step__label-fullsize">
                         Цена обычных
-                        <input class="conf-step__input" type="number" name="price_regular" required min="0">
+                        <input
+                            class="conf-step__input"
+                            type="number"
+                            name="price_regular"
+                            min="1"
+                            placeholder="По умолчанию из конфигурации зала"
+                        >
                     </label>
 
+            
                     <label class="conf-step__label conf-step__label-fullsize">
                         Цена VIP
-                        <input class="conf-step__input" type="number" name="price_vip" required min="0">
+                        <input
+                            class="conf-step__input"
+                            type="number"
+                            name="price_vip"
+                            min="1"
+                            placeholder="По умолчанию из конфигурации зала"
+                        >
                     </label>
 
                     <div class="conf-step__buttons text-center">

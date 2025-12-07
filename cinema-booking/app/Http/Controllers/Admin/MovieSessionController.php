@@ -1,9 +1,10 @@
-<?php  
+<?php
 
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\MovieSession;
+use Carbon\Carbon;
 use App\Models\CinemaHall;
 use App\Models\Movie;
 use Illuminate\Http\Request;
@@ -13,6 +14,7 @@ class MovieSessionController extends Controller
     public function index()
     {
         $sessions = MovieSession::with(['hall', 'movie'])
+            ->orderBy('session_date')
             ->orderBy('start_time')
             ->get();
 
@@ -30,42 +32,56 @@ class MovieSessionController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'hall_id'     => 'required|exists:cinema_halls,id',
-            'movie_id'    => 'required|exists:movies,id',
-            'start_time'  => 'required|date_format:H:i',
-            'price_regular' => 'nullable|integer|min:0',
-            'price_vip'     => 'nullable|integer|min:0',
+            'hall_id'       => 'required|exists:cinema_halls,id',
+            'movie_id'      => 'required|exists:movies,id',
+            'start_time'    => 'required|date_format:H:i',
+            'price_regular' => 'nullable',
+            'price_vip'     => 'nullable',
         ]);
 
-   
         $hall = CinemaHall::findOrFail($request->hall_id);
         if (!$hall->is_active) {
             return back()->withErrors("Этот зал закрыт, нельзя добавить сеанс.");
         }
 
-
         $movie = Movie::findOrFail($request->movie_id);
 
-   
-        $start = now()->format('Y-m-d') . ' ' . $request->start_time . ':00';
+       
+        $regularInput = $request->price_regular;
+        $vipInput     = $request->price_vip;
 
-      
-        $end = date('Y-m-d H:i:s', strtotime($start . " +{$movie->duration} minutes"));
+        $priceRegular = ($regularInput !== null && $regularInput !== '')
+            ? (int)$regularInput
+            : ($hall->price->regular_price ?? 0);
+
+        $priceVip = ($vipInput !== null && $vipInput !== '')
+            ? (int)$vipInput
+            : ($hall->price->vip_price ?? 0);
 
        
-        $priceRegular = $request->price_regular ?? ($hall->price->regular_price ?? 0);
-        $priceVip     = $request->price_vip     ?? ($hall->price->vip_price ?? 0);
+        $daysToGenerate = 7;
+        $today = Carbon::today();
 
-        MovieSession::create([
-            'hall_id'       => $request->hall_id,
-            'movie_id'      => $request->movie_id,
-            'start_time'    => $start,
-            'end_time'      => $end,
-            'price_regular' => $priceRegular,
-            'price_vip'     => $priceVip,
-        ]);
+        for ($i = 0; $i < $daysToGenerate; $i++) {
 
-        return redirect()->route('admin.dashboard')->with('success', 'Сеанс создан');
+            $sessionDate = (clone $today)->addDays($i)->toDateString();
+
+            $start = Carbon::parse("$sessionDate {$request->start_time}:00");
+            $end   = (clone $start)->addMinutes($movie->duration);
+
+            MovieSession::create([
+                'hall_id'       => $request->hall_id,
+                'movie_id'      => $request->movie_id,
+                'session_date'  => $sessionDate,
+                'start_time'    => $start->format('Y-m-d H:i:s'),
+                'end_time'      => $end->format('Y-m-d H:i:s'),
+                'price_regular' => $priceRegular,
+                'price_vip'     => $priceVip,
+            ]);
+        }
+
+        return redirect()->route('admin.dashboard')
+            ->with('success', "Сеансы созданы на {$daysToGenerate} дней.");
     }
 
     public function edit(MovieSession $session)
@@ -79,33 +95,37 @@ class MovieSessionController extends Controller
     public function update(Request $request, MovieSession $session)
     {
         $request->validate([
-            'hall_id'     => 'required|exists:cinema_halls,id',
-            'movie_id'    => 'required|exists:movies,id',
-            'start_time'  => 'required|date_format:H:i',
-            'price_regular' => 'nullable|integer|min:0',
-            'price_vip'     => 'nullable|integer|min:0',
+            'hall_id'       => 'required|exists:cinema_halls,id',
+            'movie_id'      => 'required|exists:movies,id',
+            'start_time'    => 'required|date_format:H:i',
+            'session_date'  => 'required|date',
+            'price_regular' => 'nullable',
+            'price_vip'     => 'nullable',
         ]);
 
-       
         $hall = CinemaHall::findOrFail($request->hall_id);
         if (!$hall->is_active) {
             return back()->withErrors("Этот зал закрыт, нельзя изменить сеанс.");
         }
 
-      
         $movie = Movie::findOrFail($request->movie_id);
 
-      
-        $start = now()->format('Y-m-d') . ' ' . $request->start_time . ':00';
-        $end   = date('Y-m-d H:i:s', strtotime($start . " +{$movie->duration} minutes"));
+        $start = Carbon::parse($request->session_date . ' ' . $request->start_time . ':00');
+        $end   = (clone $start)->addMinutes($movie->duration);
 
-       
-        $priceRegular = $request->price_regular ?? ($hall->price->regular_price ?? $session->price_regular);
-        $priceVip     = $request->price_vip     ?? ($hall->price->vip_price     ?? $session->price_vip);
+     
+        $priceRegular = ($request->price_regular !== null && $request->price_regular !== '')
+            ? (int)$request->price_regular
+            : $session->price_regular;
+
+        $priceVip = ($request->price_vip !== null && $request->price_vip !== '')
+            ? (int)$request->price_vip
+            : $session->price_vip;
 
         $session->update([
             'hall_id'       => $request->hall_id,
             'movie_id'      => $request->movie_id,
+            'session_date'  => $request->session_date,
             'start_time'    => $start,
             'end_time'      => $end,
             'price_regular' => $priceRegular,

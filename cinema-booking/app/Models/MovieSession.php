@@ -10,10 +10,14 @@ class MovieSession extends Model
         'movie_id',
         'hall_id',
         'start_time',
+        'end_time', 
         'price_regular',
         'price_vip',
+        'session_date',
     ];
-
+        protected $casts = [
+        'session_date' => 'date',
+     ];
     public function movie()
     {
         return $this->belongsTo(Movie::class);
