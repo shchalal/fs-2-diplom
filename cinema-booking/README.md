@@ -20,31 +20,29 @@
 
 <h2>Установка</h2>
 
-<ol>
-    <li>Клонировать проект:
-        <pre>git clone &lt;repository&gt;</pre>
-    </li>
+Чтобы развернуть проект, сначала нужно клонировать репозиторий:
 
-    <li>Установить зависимости:
-        <pre>composer install</pre>
-    </li>
+git clone
 
-    <li>Создать файл окружения:
-        <pre>cp .env.example .env</pre>
-    </li>
+Затем установить зависимости:
 
-    <li>Сгенерировать ключ приложения:
-        <pre>php artisan key:generate</pre>
-    </li>
+composer install
 
-    <li>Выполнить миграции:
-        <pre>php artisan migrate</pre>
-    </li>
+После установки создайте файл окружения:
 
-    <li>Создать симлинк для доступа к хранилищу:
-        <pre>php artisan storage:link</pre>
-    </li>
-</ol>
+cp .env.example .env
+
+Далее сгенерируйте ключ приложения:
+
+php artisan key:generate
+
+Когда среда подготовлена, выполните миграции базы данных:
+
+php artisan migrate
+
+И в завершение создайте симлинк для доступа к файлам хранилища:
+
+php artisan storage:link
 
 <h2>Структура проекта</h2>
 
