@@ -63,10 +63,14 @@
             </span>
         </p>
 
-        {{-- QR-код (пока заглушка из макета) --}}
-        <img class="ticket__info-qr" 
-             src="{{ asset('assets/client/i/qr-code.png') }}"
-             alt="QR код">
+        {{-- QR-коды для каждого билета --}}
+       @foreach ($tickets as $ticket)
+            <img class="ticket__info-qr"
+                src="{{ asset('storage/' . $ticket->qr_path) }}"
+                alt="QR код {{ $ticket->booking_code }}">
+        @endforeach
+
+
 
         <p class="ticket__hint">
             Покажите QR-код нашему контроллеру для подтверждения бронирования.
