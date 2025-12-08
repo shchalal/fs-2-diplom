@@ -81,7 +81,12 @@ class PaymentController extends Controller
 
             $qrBinary = (new QRCode($options))->render($data);
             $qrPath = "qr/{$bookingCode}.png";
-            file_put_contents(storage_path("app/public/$qrPath"), $qrBinary);
+            if (app()->runningUnitTests()) {
+                Storage::disk('public')->put($qrPath, $qrBinary);
+            } else {
+                file_put_contents(storage_path("app/public/$qrPath"), $qrBinary);
+            }
+
            
           
 

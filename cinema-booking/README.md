@@ -1,137 +1,179 @@
+<!DOCTYPE html>
+<html lang="ru">
 
-     <h1>Cinema Booking — система онлайн-бронирования билетов</h1>
-        <p>
-            Этот проект представляет собой веб-приложение для бронирования билетов в кинотеатр.
-            У приложения есть две части:
-        </p>
-        <ul>
-            <li><strong>Административная</strong> — для управления залами, фильмами и расписанием.</li>
-            <li><strong>Пользовательская</strong> — для гостей, которые выбирают фильм, дату, сеанс и места,
-                после чего получают электронный билет с QR-кодом.</li>
-        </ul>
-        <p>Проект создан на Laravel с использованием готовой клиентской верстки.</p>
+<h1>ИдёмВКино</h1>
 
-    <section class="section">
-        <h2>Требования и окружение</h2>
-        <p>Проект работает на:</p>
-        <ul>
-            <li>PHP</span> PHP 8.1+</li>
-            <li>Laravel</span> Laravel 12</li>
-            <li>MySQL</span> MySQL 8</li>
-        </ul>
-        <p>Дополнительно используется Laravel-пакет для генерации QR-кодов.</p>
-    </section>
+<p>
+    Проект «ИдёмВКино» — это система онлайн-бронирования киносеансов, включающая клиентскую часть
+    (выбор фильма, просмотр сеансов, бронирование мест, получение билетов) и административную панель
+    (управление залами, фильмами, ценами и расписанием).
+</p>
 
-    <section class="section">
-        <h2>Установка и запуск</h2>
+<h2>Требования</h2>
+<ul>
+    <li>PHP 8.1+</li>
+    <li>Laravel 12</li>
+    <li>Composer</li>
+    <li>SQLite (для тестов) или любая поддерживаемая СУБД (MySQL/PostgreSQL)</li>
+    <li>Расширение GD (для генерации QR-кодов)</li>
+</ul>
 
-        <h3>1. Клонирование проекта</h3>
-        <pre><code>git clone https://github.com/yourname/cinema-booking.git
-cd cinema-booking</code></pre>
+<h2>Установка</h2>
 
-        <h3>2. Установка зависимостей</h3>
-        <pre><code>composer install</code></pre>
+<ol>
+    <li>Клонировать проект:
+        <pre>git clone &lt;repository&gt;</pre>
+    </li>
 
-        <h3>3. Настройка окружения</h3>
-        <pre><code>cp .env.example .env</code></pre>
+    <li>Установить зависимости:
+        <pre>composer install</pre>
+    </li>
 
-        <p>Укажите параметры подключения к базе данных:</p>
-        <pre><code>DB_DATABASE=cinema
-DB_USERNAME=root
-DB_PASSWORD=</code></pre>
+    <li>Создать файл окружения:
+        <pre>cp .env.example .env</pre>
+    </li>
 
-        <h3>4. Генерация ключа</h3>
-        <pre><code>php artisan key:generate</code></pre>
+    <li>Сгенерировать ключ приложения:
+        <pre>php artisan key:generate</pre>
+    </li>
 
-        <h3>5. Запуск миграций</h3>
-        <pre><code>php artisan migrate</code></pre>
+    <li>Выполнить миграции:
+        <pre>php artisan migrate</pre>
+    </li>
 
-        <p>Если используются сидеры с тестовыми данными:</p>
-        <pre><code>php artisan db:seed</code></pre>
+    <li>Создать симлинк для доступа к хранилищу:
+        <pre>php artisan storage:link</pre>
+    </li>
+</ol>
 
-        <h3>6. Создание ссылки на хранилище</h3>
-        <pre><code>php artisan storage:link</code></pre>
+<h2>Структура проекта</h2>
 
-        <h3>7. Запуск сервера</h3>
-        <pre><code>php artisan serve</code></pre>
+<h3>Основные директории</h3>
+<ul>
+    <li><code>app/Models</code> — модели приложения (Movie, MovieSession, CinemaHall, Seat, Ticket, HallPrice).</li>
+    <li><code>app/Http/Controllers/Client</code> — контроллеры клиентской части.</li>
+    <li><code>app/Http/Controllers/Admin</code> — контроллеры административной панели.</li>
+    <li><code>resources/views/client</code> — шаблоны клиентского интерфейса.</li>
+    <li><code>resources/views/admin</code> — шаблоны панели администратора.</li>
+    <li><code>database/migrations</code> — миграции.</li>
+    <li><code>database/factories</code> — фабрики моделей для тестов.</li>
+    <li><code>tests/Feature</code> — функциональные тесты.</li>
+</ul>
 
-        <p>Приложение станет доступно по адресу:</p>
-        <p><code>http://127.0.0.1:8000/</code></p>
-    </section>
+<h2>Клиентская часть</h2>
 
-    <section class="section">
-        <h2>Административная панель</h2>
+<p>Клиентские маршруты определены в корневой части <code>routes/web.php</code>.</p>
 
-        <p>Админ-панель расположена по адресу:</p>
-        <p><code>http://127.0.0.1:8000/admin</code></p>
+<h3>Главная страница</h3>
+<p><strong>HomeController@index</strong> выводит список фильмов, у которых есть сеансы на текущую дату.</p>
 
-        <p>Если создан сидер администратора, логин может быть таким:</p>
-        <ul>
-            <li><strong>email:</strong> <code>admin@example.com</code></li>
-            <li><strong>password:</strong> <code>admin</code></li>
-        </ul>
+<h3>Выбор мест</h3>
+<p>
+    <strong>HallController@index</strong> показывает схему зала для выбранного сеанса:
+</p>
+<ul>
+    <li>ряд и номер места (<code>row_number</code>, <code>seat_number</code>)</li>
+    <li>тип места (обычное, VIP)</li>
+    <li>свободно / занято</li>
+</ul>
 
-        <p>Если сидера нет, пользователя можно создать вручную:</p>
-        <pre><code>php artisan tinker</code></pre>
+<h3>Оплата</h3>
+<p>
+    <strong>PaymentController</strong> оформляет заказ, создаёт билеты и генерирует QR-коды
+    (по одному на каждое место). Файлы QR-кодов сохраняются в <code>storage/app/public/qr/</code>.
+</p>
 
-        <pre><code>User::create([
-    'name'      =&gt; 'Admin',
-    'email'     =&gt; 'admin@example.com',
-    'password'  =&gt; Hash::make('admin'),
-    'is_admin'  =&gt; true,
-]);</code></pre>
-    </section>
+<h3>Страница билета</h3>
+<p>
+    <strong>TicketController@show</strong> выводит информацию о заказе.  
+    QR-код для каждого билета отображается тегом:
+</p>
 
-    <section class="section">
-        <h2>Описание функционала</h2>
+<pre>
+&lt;img class="ticket__info-qr"
+     src="{{ asset('storage/' . $ticket->qr_path) }}"
+     alt="QR код {{ $ticket->booking_code }}"&gt;
+</pre>
 
-        <h3>Администратор</h3>
-        <p>Администратор может:</p>
-        <ul>
-            <li>создавать и редактировать кинозалы;</li>
-            <li>задавать количество рядов и мест, а также тип каждого места (обычное, VIP, отключённое);</li>
-            <li>включать и выключать продажу билетов в конкретном зале;</li>
-            <li>добавлять и редактировать фильмы с указанием длительности, описания, страны, постера;</li>
-            <li>настраивать базовые цены для обычных и VIP-мест;</li>
-            <li>создавать расписание сеансов. При добавлении одного сеанса система автоматически создаёт его на семь последующих дней. Если цена не указана вручную, подставляется базовая цена зала;</li>
-            <li>редактировать и удалять существующие сеансы.</li>
-        </ul>
+<h2>Административная панель</h2>
 
-        <h3>Пользовательская часть</h3>
-        <p>Пользователь может:</p>
-        <ul>
-            <li>просматривать расписание по дням (дни переключаются вверху страницы);</li>
-            <li>просматривать список фильмов с описанием;</li>
-            <li>для каждого фильма видеть доступные сеансы по залам;</li>
-            <li>выбрать конкретный сеанс и открыть схему зала;</li>
-            <li>выбрать свободные места;</li>
-            <li>забронировать билет.</li>
-        </ul>
+<p>Все маршруты панели находятся под префиксом <code>/admin</code> и защищены middleware <code>auth</code> и <code>isAdmin</code>.</p>
 
-        <p>После бронирования пользователь получает электронный билет. В нём указаны:</p>
-        <ul>
-            <li>название фильма,</li>
-            <li>дата и время сеанса,</li>
-            <li>зал,</li>
-            <li>ряд и место,</li>
-            <li>уникальный код бронирования,</li>
-            <li>QR-код.</li>
-        </ul>
+<h3>AdminDashboardController</h3>
+<p>
+    Вывод общей административной статистики. Доступен по маршруту <code>/admin</code>.
+</p>
 
-        <p>QR-код сохраняется как файл в <code>storage/app/public/qr/</code>.</p>
-    </section>
+<h3>CinemaHallController</h3>
+<p>
+    Управление залами:
+</p>
+<ul>
+    <li>создание, редактирование, активация/деактивация</li>
+    <li>автоматическая генерация мест при создании</li>
+    <li>AJAX-переключение типа места на плане зала</li>
+</ul>
 
-    <section class="section">
-        <h2>Важные технические моменты</h2>
-        <ul>
-            <li>Все формы проходят серверную валидацию.</li>
-            <li>Пароли хранятся в хешированном виде.</li>
-            <li>При попытке забронировать занятое место система не позволит завершить операцию.</li>
-            <li>В клиентской части выводятся только активные залы.</li>
-            <li>Расписание автоматически фильтруется по дате.</li>
-            <li>QR-коды генерируются автоматически и сохраняются в файловом хранилище.</li>
-        </ul>
-    </section>
+<h3>HallPriceController</h3>
+<p>
+    Управление ценами в зале. Модель <code>HallPrice</code> хранит цены на обычные и VIP-места.
+</p>
+
+<h3>MovieController</h3>
+<p>
+    CRUD-операции над фильмами: список, создание, редактирование, удаление.
+</p>
+
+<h3>MovieSessionController</h3>
+<p>
+    Управление сеансами:
+</p>
+<ul>
+    <li>выбор фильма и зала</li>
+    <li>указание времени начала, окончания и даты</li>
+    <li>хранение цен для выбранного сеанса</li>
+</ul>
+
+<h2>QR-коды</h2>
+
+<p>
+    QR-код генерируется для каждого билета отдельно.  
+    Изображения сохраняются в директорию <code>storage/app/public/qr</code>.
+</p>
+
+<p>
+    Тесты проверяют наличие созданного файла через файловую систему Laravel.
+</p>
+
+<h2>Тестирование</h2>
+
+<p>
+    В проекте используется SQLite как тестовая база.  
+    Запуск тестов выполняется стандартной командой:
+</p>
+
+<pre>php artisan test</pre>
+
+<p>
+    Важные тесты:
+</p>
+
+<ul>
+    <li><strong>guest_can_book_tickets_and_qr_codes_are_generated</strong> — проверяет успешное бронирование и наличие QR-файлов.</li>
+    <li><strong>seat_cannot_be_double_booked</strong> — гарантирует невозможность двойного бронирования одного места.</li>
+</ul>
+
+<h2>Генерация данных для разработки</h2>
+
+<p>
+    В системе есть отдельный отладочный маршрут, создающий тестовые места для зала №7:
+</p>
+
+<pre>/admin/debug/fill-seats-7</pre>
+
+
+
+
 
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 

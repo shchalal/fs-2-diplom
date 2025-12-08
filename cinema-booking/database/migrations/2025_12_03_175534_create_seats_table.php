@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('seats', function (Blueprint $table) {
             $table->id();
             $table->foreignId('hall_id')->constrained('cinema_halls')->onDelete('cascade');
-            $table->integer('row');
+            $table->integer('row_number');
             $table->integer('seat_number');
             $table->enum('seat_type', ['regular', 'vip'])->default('regular');
             $table->timestamps();
