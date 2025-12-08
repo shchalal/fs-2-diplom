@@ -20,32 +20,49 @@
 </header>
 
 <main>
-
     <section class="ticket">
+
         <header class="tichet__check">
             <h2 class="ticket__check-title">Вы выбрали билеты:</h2>
         </header>
 
         <div class="ticket__info-wrapper">
 
+            {{-- На фильм --}}
             <p class="ticket__info">
+                На фильм:
                 <span class="ticket__details ticket__title">
                     {{ $session->movie->title }}
                 </span>
+            </p>
+
+            {{-- Места --}}
+            <p class="ticket__info">
+                Места:
                 <span class="ticket__details ticket__chairs">
-                    Места:
                     @foreach ($seats as $seat)
-                        ряд {{ $seat->row_number }}, место {{ $seat->seat_number }};
+                        ряд {{ $seat->row_number }}, место {{ $seat->seat_number }}@if(!$loop->last), @endif
                     @endforeach
-                </span>
-                <span class="ticket__details ticket__hall">
-                    Зал: {{ $session->hall->name }}
-                </span>
-                <span class="ticket__details ticket__start">
-                    Начало сеанса: {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }}
                 </span>
             </p>
 
+            {{-- В зале --}}
+            <p class="ticket__info">
+                В зале:
+                <span class="ticket__details ticket__hall">
+                    {{ $session->hall->name }}
+                </span>
+            </p>
+
+            {{-- Начало сеанса --}}
+            <p class="ticket__info">
+                Начало сеанса:
+                <span class="ticket__details ticket__start">
+                    {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }}
+                </span>
+            </p>
+
+            {{-- Стоимость --}}
             @php
                 $regularPrice = $session->price_regular ?? $session->hall->price->regular_price ?? 0;
                 $vipPrice     = $session->price_vip     ?? $session->hall->price->vip_price     ?? 0;
@@ -57,12 +74,14 @@
             @endphp
 
             <p class="ticket__info">
+                Стоимость:
                 <span class="ticket__details ticket__cost">
-                    Итого: {{ $total }} ₽
+                    {{ $total }}
                 </span>
+                рублей
             </p>
 
-            {{-- ФОРМА ОПЛАТЫ --}}
+            {{-- Форма "Получить код бронирования" --}}
             <form class="ticket__buy" method="POST" action="{{ route('client.payment.store') }}">
                 @csrf
 
@@ -70,12 +89,18 @@
                 <input type="hidden" name="seats" value="{{ json_encode($seatIds) }}">
 
                 <button class="acceptin-button" type="submit">
-                    Оплатить
+                    Получить код бронирования
                 </button>
             </form>
+
+            <p class="ticket__hint">
+                После оплаты билет будет доступен в этом окне, а также придёт вам на почту.
+                Покажите QR-код нашему контроллёру у входа в зал.
+            </p>
+            <p class="ticket__hint">Приятного просмотра!</p>
+
         </div>
     </section>
-
 </main>
 
 </body>

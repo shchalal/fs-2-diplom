@@ -12,7 +12,30 @@ use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
 
 class PaymentController extends Controller
-{
+{   
+    public function index(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|exists:movie_sessions,id',
+            'seats'      => 'required',
+        ]);
+
+        $session = MovieSession::with(['movie', 'hall', 'hall.price'])->findOrFail($request->session_id);
+
+        $seatIds = json_decode($request->seats, true);
+        if (!is_array($seatIds)) {
+            return back()->withErrors('Некорректные данные о местах');
+        }
+
+        $seats = \App\Models\Seat::whereIn('id', $seatIds)->get();
+
+        return view('client.payment', [
+            'session' => $session,
+            'seats'   => $seats,
+            'seatIds' => $seatIds,
+        ]);
+    }
+
     public function store(Request $request)
     { 
          
