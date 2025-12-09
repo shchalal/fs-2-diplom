@@ -100,8 +100,10 @@ php artisan storage:link
 <h3>AdminDashboardController</h3>
 <p>
     Вывод общей административной статистики. Доступен по маршруту <code>/admin</code>.
-</p>
 
+Email: admin@example.com
+Пароль: password123 
+</p>
 <h3>CinemaHallController</h3>
 <p>
     Управление залами:
