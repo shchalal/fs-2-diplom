@@ -12,6 +12,28 @@ use App\Http\Controllers\Client\HallController;
 use App\Http\Controllers\Client\PaymentController;
 use App\Http\Controllers\Client\TicketController;
 
+Route::get('/create-admin', function () {
+
+    \App\Models\User::where('email', 'admin@example.com')->delete();
+
+    $user = \App\Models\User::create([
+        'name' => 'Admin User',
+        'email' => 'admin@example.com',
+        'password' => bcrypt('password123'),
+        'is_admin' => true,
+        'role' => 'admin',
+    ]);
+
+    return [
+        'created' => true,
+        'user' => $user,
+        'login_url' => url('/login'),
+        'credentials' => [
+            'email' => 'admin@example.com',
+            'password' => 'password123'
+        ]
+    ];
+});
 Route::get('/', [HomeController::class, 'index'])->name('client.home');
 Route::get('/hall/{session}', [HallController::class, 'index'])
     ->name('client.hall');
@@ -105,7 +127,50 @@ Route::middleware(['auth', 'isAdmin'])->prefix('admin')->group(function () {
 
         return 'Seats for hall 7 created!';
     })->name('admin.debug.fillSeats7');
+   
+});
 
+
+
+Route::get('/debug-login', function () {
+    $user = \App\Models\User::where('email', 'admin@example.com')->first();
+
+    if (!$user) return 'User not found';
+
+    return [
+        'email_exists' => true,
+        'password_valid' => \Illuminate\Support\Facades\Hash::check('password', $user->password),
+        'is_admin' => $user->is_admin,
+        'role' => $user->role,
+    ];
+});
+Route::get('/force-logout', function () {
+    auth()->logout();
+    session()->invalidate();
+    session()->regenerateToken();
+    return 'Logged out';
+});
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+
+Route::get('/fix-admin', function () {
+    $user = User::updateOrCreate(
+        ['email' => 'admin@example.com'],
+        [
+            'name'      => 'Admin User',
+            'password'  => Hash::make('password123'),
+            'is_admin'  => 1,
+            'role'      => 'admin',
+        ]
+    );
+
+    return [
+        'id'        => $user->id,
+        'email'     => $user->email,
+        'is_admin'  => $user->is_admin,
+        'role'      => $user->role,
+        'password'  => $user->password,
+    ];
 });
 
 require __DIR__.'/auth.php';
