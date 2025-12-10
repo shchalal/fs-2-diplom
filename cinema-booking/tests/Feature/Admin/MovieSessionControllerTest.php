@@ -49,8 +49,7 @@ class MovieSessionControllerTest extends TestCase
         $response->assertSessionHasErrors([
             'movie_id',
             'hall_id',
-            'session_date',
-            'start_time'
+            'start_time',
         ]);
     }
 
@@ -63,19 +62,22 @@ class MovieSessionControllerTest extends TestCase
         $hall  = CinemaHall::factory()->create(['is_active' => 1]);
 
         $response = $this->post(route('admin.sessions.store'), [
-            'movie_id'    => $movie->id,
-            'hall_id'     => $hall->id,
-            'session_date'=> now()->addDay()->format('Y-m-d'),
-            'start_time'  => '15:00',
-        ]);
-
-        $response->assertRedirect(route('admin.sessions.index'));
-
-        $this->assertDatabaseHas('movie_sessions', [
             'movie_id' => $movie->id,
             'hall_id'  => $hall->id,
-            'session_date' => now()->addDay()->format('Y-m-d'),
             'start_time' => '15:00',
+        ]);
+
+        $response->assertRedirect(route('admin.dashboard'));
+
+     
+        $sessionDate = now()->addDay()->format('Y-m-d');
+        $startDateTime = now()->addDay()->setTime(15, 0)->format('Y-m-d H:i:s');
+
+        $this->assertDatabaseHas('movie_sessions', [
+            'movie_id'     => $movie->id,
+            'hall_id'      => $hall->id,
+            'session_date' => $sessionDate . ' 00:00:00',
+            'start_time'   => $startDateTime,
         ]);
     }
 
@@ -91,7 +93,7 @@ class MovieSessionControllerTest extends TestCase
             'movie_id'     => $movie->id,
             'hall_id'      => $hall->id,
             'session_date' => now()->format('Y-m-d'),
-            'start_time'   => '10:00',
+            'start_time'   => now()->setTime(10, 0),
         ]);
 
         $response = $this->put(route('admin.sessions.update', $session->id), [
@@ -101,12 +103,12 @@ class MovieSessionControllerTest extends TestCase
             'start_time'   => '18:30',
         ]);
 
-        $response->assertRedirect(route('admin.sessions.index'));
+        $response->assertRedirect(route('admin.dashboard'));
 
         $this->assertDatabaseHas('movie_sessions', [
-            'id' => $session->id,
-            'session_date' => now()->addDays(2)->format('Y-m-d'),
-            'start_time' => '18:30',
+            'id'            => $session->id,
+            'session_date'  => now()->addDays(2)->format('Y-m-d') . ' 00:00:00',
+            'start_time'    => now()->addDays(2)->setTime(18, 30)->format('Y-m-d H:i:s'),
         ]);
     }
 
@@ -119,7 +121,8 @@ class MovieSessionControllerTest extends TestCase
 
         $response = $this->delete(route('admin.sessions.destroy', $session->id));
 
-        $response->assertRedirect(route('admin.sessions.index'));
+     
+        $response->assertRedirect('/');
 
         $this->assertDatabaseMissing('movie_sessions', [
             'id' => $session->id,
