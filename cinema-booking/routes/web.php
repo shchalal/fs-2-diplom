@@ -63,8 +63,8 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'isAdmin'])->prefix('admin')->group(function () {
 
    
-    Route::match(['GET', 'POST'], '/', [AdminDashboardController::class, 'index'])
-        ->name('admin.dashboard');
+    Route::get('/', [AdminDashboardController::class, 'index'])
+    ->name('admin.dashboard');
 
 
     Route::get('/halls', [CinemaHallController::class, 'index'])->name('admin.halls.index');

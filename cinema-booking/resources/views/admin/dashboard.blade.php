@@ -371,121 +371,145 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* ------------------------------- */
-    /* 2) Конфигурация залов           */
-    /* ------------------------------- */
-    const halls       = @json($halls);
-    const seatsByHall = @json($allSeatsGroupedByHall);
+/* 2) Конфигурация залов           */
+/* ------------------------------- */
+const halls       = @json($halls);
+const seatsByHall = @json($allSeatsGroupedByHall);
 
-    const rowsInput  = document.getElementById("rowsInput");
-    const seatsInput = document.getElementById("seatsInput");
-    const hallScheme = document.getElementById("hallScheme");
-    const saveBtn    = document.getElementById("saveConfig");
+const rowsInput  = document.getElementById("rowsInput");
+const seatsInput = document.getElementById("seatsInput");
+const hallScheme = document.getElementById("hallScheme");
+const saveBtn    = document.getElementById("saveConfig");
 
-    let currentHallId = (halls.length > 0) ? halls[0].id : null;
+let currentHallId = (halls.length > 0) ? halls[0].id : null;
 
-    function seatClass(type) {
-        switch (type) {
-            case 'vip':      return 'conf-step__chair_vip';
-            case 'disabled': return 'conf-step__chair_disabled';
-            default:         return 'conf-step__chair_standart';
-        }
+function seatClass(type) {
+    switch (type) {
+        case 'vip':      return 'conf-step__chair_vip';
+        case 'disabled': return 'conf-step__chair_disabled';
+        default:         return 'conf-step__chair_standart';
     }
+}
 
-    function drawHall() {
-        if (!currentHallId || !hallScheme || !rowsInput || !seatsInput) return;
+function drawHall() {
+    if (!currentHallId) return;
 
-        const hall = halls.find(h => Number(h.id) === Number(currentHallId));
-        if (!hall) return;
+    const hall = halls.find(h => Number(h.id) === Number(currentHallId));
+    if (!hall) return;
 
-        rowsInput.value  = hall.rows;
-        seatsInput.value = hall.seats_per_row;
+    rowsInput.value  = hall.rows;
+    seatsInput.value = hall.seats_per_row;
 
-        hallScheme.innerHTML = "";
+    hallScheme.innerHTML = "";
 
-        const hallSeats = seatsByHall[currentHallId] || [];
+    const hallSeats = seatsByHall[currentHallId] || [];
 
-        for (let r = 1; r <= hall.rows; r++) {
-            const rowDiv = document.createElement("div");
-            rowDiv.className = "conf-step__row";
+    for (let r = 1; r <= hall.rows; r++) {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "conf-step__row";
 
-            for (let s = 1; s <= hall.seats_per_row; s++) {
-                const el = document.createElement("span");
-                el.classList.add("conf-step__chair");
+        for (let s = 1; s <= hall.seats_per_row; s++) {
+            const el = document.createElement("span");
+            el.classList.add("conf-step__chair");
 
-                const seat = hallSeats.find(seat =>
-                    Number(seat.row_number) === r &&
-                    Number(seat.seat_number) === s
-                );
+            const seat = hallSeats.find(seat =>
+                Number(seat.row_number) === r &&
+                Number(seat.seat_number) === s
+            );
 
-                if (seat) {
-                    el.dataset.seatId = seat.id;
-                    el.classList.add(seatClass(seat.seat_type));
-                    el.addEventListener("click", () => toggleSeat(el, seat.id));
-                } else {
-                    el.classList.add("conf-step__chair_disabled");
+            if (seat) {
+                el.dataset.seatId = seat.id;
+                el.classList.add(seatClass(seat.seat_type));
+
+                el.addEventListener("click", () => toggleSeat(el, seat.id));
+            } else {
+                
+                el.classList.add("conf-step__chair_disabled");
+            }
+
+            rowDiv.appendChild(el);
+        }
+
+        hallScheme.appendChild(rowDiv);
+    }
+}
+
+function toggleSeat(el, seatId) {
+    fetch(`/admin/halls/${currentHallId}/seats/${seatId}/toggle-ajax`, {
+        method: "POST",
+        headers: {
+            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+            "Accept": "application/json"
+        }
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (!d.success) return;
+
+        el.className = "conf-step__chair " + seatClass(d.new_type);
+
+     
+        const hallSeats = seatsByHall[currentHallId];
+        const seatObj = hallSeats.find(s => s.id == seatId);
+        if (seatObj) seatObj.seat_type = d.new_type;
+    });
+}
+
+if (halls.length > 0) {
+    document.querySelectorAll(".hall-select").forEach(radio => {
+        radio.addEventListener("change", () => {
+            currentHallId = radio.value;
+            drawHall();
+        });
+    });
+
+    if (saveBtn) {
+        saveBtn.addEventListener("click", () => {
+            const hall = halls.find(h => h.id == currentHallId);
+            if (!hall) return;
+
+            const rows  = Number(rowsInput.value);
+            const seats = Number(seatsInput.value);
+
+            if (rows < 1 || seats < 1) {
+                alert("Ряды и места должны быть положительными числами");
+                return;
+            }
+
+            const fd = new FormData();
+            fd.append("name", hall.name);
+            fd.append("rows", rows);
+            fd.append("seats_per_row", seats);
+            fd.append("_method", "PUT");
+
+            fetch(`/admin/halls/${currentHallId}`, {
+                method: "POST",
+                headers: {
+                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: fd
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.seats) {
+                    
+                    seatsByHall[currentHallId] = data.seats;
+
+                  
+                    const hallObj = halls.find(h => h.id == currentHallId);
+                    hallObj.rows = rows;
+                    hallObj.seats_per_row = seats;
                 }
 
-                rowDiv.appendChild(el);
-            }
-
-            hallScheme.appendChild(rowDiv);
-        }
-    }
-
-    function toggleSeat(el, seatId) {
-        fetch(`/admin/halls/${currentHallId}/seats/${seatId}/toggle-ajax`, {
-            method: "POST",
-            headers: {
-                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-                "Accept": "application/json"
-            }
-        })
-        .then(r => r.json())
-        .then(d => {
-            if (!d.success) return;
-            el.className = "conf-step__chair " + seatClass(d.new_type);
-        });
-    }
-
-    if (halls.length > 0) {
-        document.querySelectorAll(".hall-select").forEach(radio => {
-            radio.addEventListener("change", () => {
-                currentHallId = radio.value;
                 drawHall();
-            });
+            })
+            .catch(() => location.reload());
         });
-
-        if (saveBtn) {
-            saveBtn.addEventListener("click", () => {
-                const hall = halls.find(h => h.id == currentHallId);
-                if (!hall) return;
-
-                const rows  = Number(rowsInput.value);
-                const seats = Number(seatsInput.value);
-
-                if (!rows || !seats || rows < 1 || seats < 1) {
-                    alert("Ряды и места должны быть положительными числами");
-                    return;
-                }
-
-                const fd = new FormData();
-                fd.append("name", hall.name);
-                fd.append("rows", rows);
-                fd.append("seats_per_row", seats);
-                fd.append("_method", "PUT");
-
-                fetch(`/admin/halls/${currentHallId}`, {
-                    method: "POST",
-                    headers: {
-                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: fd
-                }).then(() => location.reload());
-            });
-        }
-
-        drawHall();
     }
+
+    drawHall();
+}
+
 
 
 

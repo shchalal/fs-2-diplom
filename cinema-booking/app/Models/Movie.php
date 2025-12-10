@@ -14,7 +14,7 @@ class Movie extends Model
         'description',
         'poster_url',
         'duration',
-        'age_limit',
+        
     ];
 
      public function sessions()

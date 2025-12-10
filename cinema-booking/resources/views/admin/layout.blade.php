@@ -36,10 +36,8 @@
         
         const opener = event.target.closest('[data-open]');
         console.log('OPENER FOUND:', opener); 
-        if (event.target.closest('button') && !event.target.closest('[data-open]')) {
-       
-        return;
-    }
+        
+    
         if (opener) {
             const popupId = opener.dataset.open;
             const popup   = document.getElementById(popupId);

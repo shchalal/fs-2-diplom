@@ -54,7 +54,7 @@ class MovieController extends Controller
         $request->validate([
             'title' => 'required',
             'description' => 'nullable',
-            'duration' => 'required|integer|min=1',
+            'duration' => 'required|integer|min:1',
             'poster' => 'nullable|image|max:2048',
         ]);
 

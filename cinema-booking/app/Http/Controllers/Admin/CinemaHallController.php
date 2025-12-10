@@ -21,19 +21,93 @@ class CinemaHallController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255'
-        ]);
+{
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+    ]);
 
-        CinemaHall::create([
-            'name' => $request->name,
-            'rows' => 5,
-            'seats_per_row' => 5,
-        ]);
+    
+    $rows = 5;
+    $seatsPerRow = 5;
 
-        return redirect()->back()->with('success', 'Зал создан!');
+    
+    $hall = CinemaHall::create([
+        'name'          => $validated['name'],
+        'rows'          => $rows,
+        'seats_per_row' => $seatsPerRow,
+    ]);
+
+    
+    for ($r = 1; $r <= $rows; $r++) {
+        for ($s = 1; $s <= $seatsPerRow; $s++) {
+            Seat::create([
+                'hall_id'     => $hall->id,
+                'row_number'  => $r,
+                'seat_number' => $s,
+                'seat_type'   => 'regular', 
+            ]);
+        }
     }
+
+ 
+    return redirect()
+        ->route('admin.dashboard')
+        ->with('success', 'Зал создан!');
+}
+
+public function update(Request $request, CinemaHall $hall)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'rows' => 'required|integer|min:1',
+        'seats_per_row' => 'required|integer|min:1',
+    ]);
+
+  
+    $oldRows = $hall->rows;
+    $oldSeatsPerRow = $hall->seats_per_row;
+
+    $hall->update([
+        'name' => $request->name,
+        'rows' => $request->rows,
+        'seats_per_row' => $request->seats_per_row,
+    ]);
+
+    if ($oldRows == $hall->rows && $oldSeatsPerRow == $hall->seats_per_row) {
+        return redirect()
+            ->route('admin.dashboard')
+            ->with('success', 'Настройки зала сохранены. Схема мест не изменена.');
+    }
+
+    $oldSeats = $hall->seats()
+        ->orderBy('row_number')
+        ->orderBy('seat_number')
+        ->get()
+        ->groupBy('row_number')
+        ->map(fn($r) => $r->keyBy('seat_number'));
+
+ 
+    $hall->seats()->delete();
+
+    for ($r = 1; $r <= $hall->rows; $r++) {
+        for ($s = 1; $s <= $hall->seats_per_row; $s++) {
+
+         
+            $oldType = $oldSeats[$r][$s]->seat_type ?? 'regular';
+
+            \App\Models\Seat::create([
+                'hall_id'     => $hall->id,
+                'row_number'  => $r,
+                'seat_number' => $s,
+                'seat_type'   => $oldType,
+            ]);
+        }
+    }
+
+    return redirect()
+        ->route('admin.dashboard')
+        ->with('success', 'Размеры обновлены. Существующие типы кресел сохранены.');
+}
 
    public function toggle(CinemaHall $hall)
       {
@@ -57,35 +131,7 @@ class CinemaHallController extends Controller
 
 
    
-    public function update(Request $request, CinemaHall $hall)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'rows' => 'required|integer|min:1',
-            'seats_per_row' => 'required|integer|min:1',
-        ]);
-
-        
-        $hall->update($request->only('name', 'rows', 'seats_per_row'));
-
-        
-        \App\Models\Seat::where('hall_id', $hall->id)->delete();
-
-        for ($r = 1; $r <= $hall->rows; $r++) {
-            for ($s = 1; $s <= $hall->seats_per_row; $s++) {
-                \App\Models\Seat::create([
-                    'hall_id'     => $hall->id,
-                    'row_number'  => $r,
-                    'seat_number' => $s,
-                    'seat_type'   => 'regular',
-                ]);
-            }
-        }
-
-    return redirect()
-        ->route('admin.halls.index')
-        ->with('success', 'Зал обновлён, схема перестроена!');
-}
+   
 
 
     public function seats(CinemaHall $hall)
