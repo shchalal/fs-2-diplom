@@ -373,6 +373,7 @@ document.addEventListener("DOMContentLoaded", () => {
     /* ------------------------------- */
 /* 2) Конфигурация залов           */
 /* ------------------------------- */
+
 const halls       = @json($halls);
 const seatsByHall = @json($allSeatsGroupedByHall);
 
@@ -381,14 +382,47 @@ const seatsInput = document.getElementById("seatsInput");
 const hallScheme = document.getElementById("hallScheme");
 const saveBtn    = document.getElementById("saveConfig");
 
-let currentHallId = (halls.length > 0) ? halls[0].id : null;
+
+// { hallId: { seatId: "vip" | "regular" | "disabled" } }
+let changedSeats = {};
+
+let currentHallId = halls.length > 0 ? halls[0].id : null;
 
 function seatClass(type) {
     switch (type) {
-        case 'vip':      return 'conf-step__chair_vip';
-        case 'disabled': return 'conf-step__chair_disabled';
-        default:         return 'conf-step__chair_standart';
+        case "vip": return "conf-step__chair_vip";
+        case "disabled": return "conf-step__chair_disabled";
+        default: return "conf-step__chair_standart";
     }
+}
+
+
+function nextSeatType(type) {
+    switch (type) {
+        case "regular": return "vip";
+        case "vip": return "disabled";
+        case "disabled": return "regular";
+        default: return "regular";
+    }
+}
+
+function toggleSeat(el, seatId) {
+    const hallSeats = seatsByHall[currentHallId] || [];
+    const seatObj = hallSeats.find(s => Number(s.id) === Number(seatId));
+    if (!seatObj) return;
+
+    
+    const newType = nextSeatType(seatObj.seat_type);
+    seatObj.seat_type = newType;
+
+   
+    if (!changedSeats[currentHallId]) {
+        changedSeats[currentHallId] = {};
+    }
+    changedSeats[currentHallId][seatId] = newType;
+
+    
+    el.className = "conf-step__chair " + seatClass(newType);
 }
 
 function drawHall() {
@@ -397,7 +431,7 @@ function drawHall() {
     const hall = halls.find(h => Number(h.id) === Number(currentHallId));
     if (!hall) return;
 
-    rowsInput.value  = hall.rows;
+    rowsInput.value = hall.rows;
     seatsInput.value = hall.seats_per_row;
 
     hallScheme.innerHTML = "";
@@ -420,10 +454,8 @@ function drawHall() {
             if (seat) {
                 el.dataset.seatId = seat.id;
                 el.classList.add(seatClass(seat.seat_type));
-
                 el.addEventListener("click", () => toggleSeat(el, seat.id));
             } else {
-                
                 el.classList.add("conf-step__chair_disabled");
             }
 
@@ -434,26 +466,6 @@ function drawHall() {
     }
 }
 
-function toggleSeat(el, seatId) {
-    fetch(`/admin/halls/${currentHallId}/seats/${seatId}/toggle-ajax`, {
-        method: "POST",
-        headers: {
-            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-            "Accept": "application/json"
-        }
-    })
-    .then(r => r.json())
-    .then(d => {
-        if (!d.success) return;
-
-        el.className = "conf-step__chair " + seatClass(d.new_type);
-
-     
-        const hallSeats = seatsByHall[currentHallId];
-        const seatObj = hallSeats.find(s => s.id == seatId);
-        if (seatObj) seatObj.seat_type = d.new_type;
-    });
-}
 
 if (halls.length > 0) {
     document.querySelectorAll(".hall-select").forEach(radio => {
@@ -462,55 +474,66 @@ if (halls.length > 0) {
             drawHall();
         });
     });
-
-    if (saveBtn) {
-        saveBtn.addEventListener("click", () => {
-            const hall = halls.find(h => h.id == currentHallId);
-            if (!hall) return;
-
-            const rows  = Number(rowsInput.value);
-            const seats = Number(seatsInput.value);
-
-            if (rows < 1 || seats < 1) {
-                alert("Ряды и места должны быть положительными числами");
-                return;
-            }
-
-            const fd = new FormData();
-            fd.append("name", hall.name);
-            fd.append("rows", rows);
-            fd.append("seats_per_row", seats);
-            fd.append("_method", "PUT");
-
-            fetch(`/admin/halls/${currentHallId}`, {
-                method: "POST",
-                headers: {
-                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: fd
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.seats) {
-                    
-                    seatsByHall[currentHallId] = data.seats;
-
-                  
-                    const hallObj = halls.find(h => h.id == currentHallId);
-                    hallObj.rows = rows;
-                    hallObj.seats_per_row = seats;
-                }
-
-                drawHall();
-            })
-            .catch(() => location.reload());
-        });
-    }
-
-    drawHall();
 }
 
 
+if (saveBtn) {
+    saveBtn.addEventListener("click", () => {
+        const hall = halls.find(h => h.id == currentHallId);
+        if (!hall) return;
+
+        const rows = Number(rowsInput.value);
+        const seats = Number(seatsInput.value);
+
+        if (rows < 1 || seats < 1) {
+            alert("Ряды и места должны быть положительными числами");
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append("name", hall.name);
+        fd.append("rows", rows);
+        fd.append("seats_per_row", seats);
+        fd.append("_method", "PUT");
+
+       
+        const hallChanges = changedSeats[currentHallId] || {};
+
+        if (Object.keys(hallChanges).length > 0) {
+            fd.append("seats_changes", JSON.stringify(hallChanges));
+        }
+
+        fetch(`/admin/halls/${currentHallId}`, {
+            method: "POST",
+            headers: {
+                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                "Accept": "application/json"
+            },
+            body: fd
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.seats) {
+                seatsByHall[currentHallId] = data.seats;
+
+                const hallObj = halls.find(h => h.id == currentHallId);
+                hallObj.rows = rows;
+                hallObj.seats_per_row = seats;
+
+               
+                changedSeats[currentHallId] = {};
+            }
+
+            drawHall();
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Ошибка сохранения зала.");
+        });
+    });
+}
+
+drawHall();
 
 
     /* ------------------------------- */
@@ -545,27 +568,47 @@ if (halls.length > 0) {
         });
 
         priceForm.addEventListener("submit", (e) => {
-            e.preventDefault();
+    e.preventDefault();
 
-            const selected = document.querySelector('.price-hall-select:checked');
-            if (!selected) {
-                alert("Выберите зал");
-                return;
-            }
+    const selected = document.querySelector('.price-hall-select:checked');
+    if (!selected) {
+        alert("Выберите зал");
+        return;
+    }
 
-            const hallId = selected.value;
-            const fd = new FormData(priceForm);
+    const hallId = selected.value;
+    const fd = new FormData(priceForm);
 
-            fetch(`/admin/halls/${hallId}/prices`, {
-                method: "POST",
-                headers: {
-                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: fd
-            })
-            .then(() => location.assign(location.pathname))
-            .catch(console.error);
-        });
+    fetch(`/admin/halls/${hallId}/prices`, {
+        method: "POST",
+        headers: {
+            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+        },
+        body: fd
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) return;
+
+       
+        const hall = halls.find(h => Number(h.id) === Number(hallId));
+        if (hall) {
+            hall.price = {
+                regular_price: data.price.regular_price,
+                vip_price: data.price.vip_price
+            };
+        }
+
+        alert("Цены сохранены!");
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Ошибка сохранения цен");
+    });
+});
+
     }
 
 

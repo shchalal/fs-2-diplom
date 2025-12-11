@@ -57,56 +57,80 @@ class CinemaHallController extends Controller
 
 public function update(Request $request, CinemaHall $hall)
 {
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'rows' => 'required|integer|min:1',
+    $data = $request->validate([
+        'name'          => 'required|string|max:255',
+        'rows'          => 'required|integer|min:1',
         'seats_per_row' => 'required|integer|min:1',
+        'seats_changes' => 'nullable|string',
     ]);
 
-  
-    $oldRows = $hall->rows;
+    $oldRows        = $hall->rows;
     $oldSeatsPerRow = $hall->seats_per_row;
 
     $hall->update([
-        'name' => $request->name,
-        'rows' => $request->rows,
-        'seats_per_row' => $request->seats_per_row,
+        'name'          => $data['name'],
+        'rows'          => $data['rows'],
+        'seats_per_row' => $data['seats_per_row'],
     ]);
 
-    if ($oldRows == $hall->rows && $oldSeatsPerRow == $hall->seats_per_row) {
-        return redirect()
-            ->route('admin.dashboard')
-            ->with('success', 'Настройки зала сохранены. Схема мест не изменена.');
-    }
 
-    $oldSeats = $hall->seats()
-        ->orderBy('row_number')
-        ->orderBy('seat_number')
-        ->get()
-        ->groupBy('row_number')
-        ->map(fn($r) => $r->keyBy('seat_number'));
+    if ($oldRows != $hall->rows || $oldSeatsPerRow != $hall->seats_per_row) {
 
- 
-    $hall->seats()->delete();
+        $oldSeats = $hall->seats()
+            ->orderBy('row_number')
+            ->orderBy('seat_number')
+            ->get()
+            ->groupBy('row_number')
+            ->map(fn($row) => $row->keyBy('seat_number'));
 
-    for ($r = 1; $r <= $hall->rows; $r++) {
-        for ($s = 1; $s <= $hall->seats_per_row; $s++) {
+        $hall->seats()->delete();
 
-         
-            $oldType = $oldSeats[$r][$s]->seat_type ?? 'regular';
+        for ($r = 1; $r <= $hall->rows; $r++) {
+            for ($s = 1; $s <= $hall->seats_per_row; $s++) {
+                $oldType = $oldSeats[$r][$s]->seat_type ?? 'regular';
 
-            \App\Models\Seat::create([
-                'hall_id'     => $hall->id,
-                'row_number'  => $r,
-                'seat_number' => $s,
-                'seat_type'   => $oldType,
-            ]);
+                Seat::create([
+                    'hall_id'     => $hall->id,
+                    'row_number'  => $r,
+                    'seat_number' => $s,
+                    'seat_type'   => $oldType,
+                ]);
+            }
         }
     }
 
+   
+    if (!empty($data['seats_changes'])) {
+        $changes = json_decode($data['seats_changes'], true) ?? [];
+
+        foreach ($changes as $seatId => $type) {
+            if (!in_array($type, ['regular','vip','disabled'], true)) {
+                continue;
+            }
+
+            Seat::where('id', $seatId)
+                ->where('hall_id', $hall->id)
+                ->update(['seat_type' => $type]);
+        }
+    }
+
+  
+    $seats = $hall->seats()
+        ->orderBy('row_number')
+        ->orderBy('seat_number')
+        ->get();
+
+   
+    if ($request->expectsJson() || $request->ajax()) {
+        return response()->json([
+            'seats' => $seats,
+        ]);
+    }
+
+   
     return redirect()
         ->route('admin.dashboard')
-        ->with('success', 'Размеры обновлены. Существующие типы кресел сохранены.');
+        ->with('success', 'Настройки зала обновлены.');
 }
 
    public function toggle(CinemaHall $hall)
