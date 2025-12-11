@@ -6,11 +6,20 @@
 
 <header class="page-header">
     <h1 class="page-header__title">Идём<span>в</span>кино</h1>
-    <span class="page-header__subtitle">Администраторская</span>
+    <span class="page-header__subtitle">Администраторррская</span>
 </header>
 
 <main class="conf-steps">
-
+    @if (session('error'))
+    <script>
+        alert("{{ session('error') }}");
+    </script>
+    @if (session('success'))
+        <script>
+            alert("{{ session('success') }}");
+        </script>
+@endif
+@endif
     {{-- ========================================================= --}}
     {{-- БЛОК 1 — УПРАВЛЕНИЕ ЗАЛАМИ --}}
     {{-- ========================================================= --}}
@@ -291,12 +300,12 @@
                                     $color = 'rgb('. (100 + $session->movie_id * 10) .',255,150)';
                                 @endphp
 
-                                <div class="conf-step__seances-movie"
-                                     style="left: {{ $left }}px; width: {{ $width }}px; background-color: {{ $color }};">
+                               <div class="conf-step__seances-movie"
+                                    data-id="{{ $session->id }}"
+                                    data-movie="{{ $session->movie->title }}"
+                                    style="left: {{ $left }}px; width: {{ $width }}px; background-color: {{ $color }};">
                                     
-                                    <p class="conf-step__seances-movie-title">
-                                        {{ $session->movie->title }}
-                                    </p>
+                                    <p class="conf-step__seances-movie-title">{{ $session->movie->title }}</p>
                                 </div>
                             @endforeach
 
@@ -327,7 +336,13 @@
         </header>
         <div class="conf-step__wrapper text-center">
             <p class="conf-step__paragraph">Всё готово!</p>
-            <button class="conf-step__button conf-step__button-accent">Открыть продажу билетов</button>
+            <form action="{{ route('admin.sales.open') }}" method="POST">
+                @csrf
+                <button class="conf-step__button conf-step__button-accent" id="openSalesBtn" type="button">
+                    Открыть продажу билетов
+                </button>
+            </form>
+
         </div>
     </section>
 
@@ -679,7 +694,50 @@ drawHall();
             }
         });
     });
+    document.querySelectorAll(".conf-step__seances-movie").forEach(block => {
+        block.addEventListener("click", function (e) {
+            e.stopPropagation();
+
+            const sessionId = block.dataset.id;
+            const movieName = block.dataset.movie;
+
+            const popup = document.getElementById("popup-delete-seance");
+            const form  = document.getElementById("delete-seance-form");
+
+            form.action = `/admin/sessions/${sessionId}`;
+
+            document.getElementById("delete-seance-id").value = sessionId;
+            document.getElementById("delete-seance-movie-name").textContent = `"${movieName}"`;
+
+            popup.classList.add("active");
+        });
+    });
+            const openSalesBtn = document.getElementById("openSalesBtn");
+
+            if (openSalesBtn) {
+                openSalesBtn.addEventListener("click", () => {
+                    fetch("/admin/open-sales", {
+                        method: "POST",
+                        headers: {
+                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                            "Accept": "application/json"
+                        }
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                        } else {
+                            alert("Ошибка: не удалось открыть продажи.");
+                        }
+                    })
+                    .catch(() => alert("Ошибка запроса"));
+                });
+            }
+
+
 
 });
+
 </script>
 @endpush

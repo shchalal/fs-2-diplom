@@ -21,6 +21,7 @@ class MovieSessionController extends Controller
         return view('admin.sessions.index', compact('sessions'));
     }
 
+
     public function create()
     {
         $halls = CinemaHall::all();
@@ -28,6 +29,7 @@ class MovieSessionController extends Controller
 
         return view('admin.sessions.create', compact('halls', 'movies'));
     }
+
 
     public function store(Request $request)
     {
@@ -46,19 +48,14 @@ class MovieSessionController extends Controller
 
         $movie = Movie::findOrFail($request->movie_id);
 
-       
-        $regularInput = $request->price_regular;
-        $vipInput     = $request->price_vip;
-
-        $priceRegular = ($regularInput !== null && $regularInput !== '')
-            ? (int)$regularInput
+        $priceRegular = $request->price_regular !== null && $request->price_regular !== ''
+            ? (int)$request->price_regular
             : ($hall->price->regular_price ?? 0);
 
-        $priceVip = ($vipInput !== null && $vipInput !== '')
-            ? (int)$vipInput
+        $priceVip = $request->price_vip !== null && $request->price_vip !== ''
+            ? (int)$request->price_vip
             : ($hall->price->vip_price ?? 0);
 
-       
         $daysToGenerate = 7;
         $today = Carbon::today();
 
@@ -68,6 +65,22 @@ class MovieSessionController extends Controller
 
             $start = Carbon::parse("$sessionDate {$request->start_time}:00");
             $end   = (clone $start)->addMinutes($movie->duration);
+
+        
+            $existing = MovieSession::where('hall_id', $hall->id)
+                ->where('session_date', $sessionDate)
+                ->get();
+
+            foreach ($existing as $sess) {
+                if (
+                    ($start < Carbon::parse($sess->end_time)) &&
+                    ($end > Carbon::parse($sess->start_time))
+                ) {
+                    return redirect()
+                        ->back()
+                        ->with('error', "Новый сеанс пересекается с уже существующим.");
+                }
+            }
 
             MovieSession::create([
                 'hall_id'       => $request->hall_id,
@@ -84,6 +97,7 @@ class MovieSessionController extends Controller
             ->with('success', "Сеансы созданы на {$daysToGenerate} дней.");
     }
 
+
     public function edit(MovieSession $session)
     {
         $halls = CinemaHall::all();
@@ -91,6 +105,7 @@ class MovieSessionController extends Controller
 
         return view('admin.sessions.edit', compact('session', 'halls', 'movies'));
     }
+
 
     public function update(Request $request, MovieSession $session)
     {
@@ -113,12 +128,28 @@ class MovieSessionController extends Controller
         $start = Carbon::parse($request->session_date . ' ' . $request->start_time . ':00');
         $end   = (clone $start)->addMinutes($movie->duration);
 
-     
-        $priceRegular = ($request->price_regular !== null && $request->price_regular !== '')
+        
+        $existing = MovieSession::where('hall_id', $hall->id)
+            ->where('session_date', $request->session_date)
+            ->where('id', '!=', $session->id)
+            ->get();
+
+        foreach ($existing as $sess) {
+            if (
+                ($start < Carbon::parse($sess->end_time)) &&
+                ($end > Carbon::parse($sess->start_time))
+            ) {
+                return redirect()
+                    ->back()
+                    ->with('error', "Изменённый сеанс пересекается с другим сеансом.");
+            }
+        }
+
+        $priceRegular = $request->price_regular !== null && $request->price_regular !== ''
             ? (int)$request->price_regular
             : $session->price_regular;
 
-        $priceVip = ($request->price_vip !== null && $request->price_vip !== '')
+        $priceVip = $request->price_vip !== null && $request->price_vip !== ''
             ? (int)$request->price_vip
             : $session->price_vip;
 
@@ -134,6 +165,7 @@ class MovieSessionController extends Controller
 
         return redirect()->route('admin.dashboard')->with('success', 'Сеанс обновлён');
     }
+
 
     public function destroy(MovieSession $session)
     {

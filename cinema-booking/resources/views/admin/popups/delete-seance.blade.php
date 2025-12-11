@@ -1,4 +1,4 @@
-<div id="popup-delete-seance" class="popup">
+<div id="popup-delete-seance" class="popup"> 
     <div class="popup__container">
         <div class="popup__content">
 
@@ -13,24 +13,22 @@
 
             <div class="popup__wrapper">
 
-                <form action="{{ route('admin.sessions.destroy', 0) }}"
-                      method="POST"
-                      id="delete-seance-form">
-
+                <form id="delete-seance-form"method="POST" >
                     @csrf
                     @method('DELETE')
-
                     <p class="conf-step__paragraph">
                         Вы действительно хотите снять с сеанса фильм
                         <span id="delete-seance-movie-name">""</span>?
                     </p>
 
-                    <input type="hidden" name="session_id" id="delete-seance-id">
+                    <input type="hidden" id="delete-seance-id" name="id">
 
                     <div class="conf-step__buttons text-center">
-                        <input type="submit"
-                               value="Удалить"
-                               class="conf-step__button conf-step__button-accent">
+                        <button type="button"
+                                class="conf-step__button conf-step__button-accent"
+                                id="confirm-delete-seance">
+                            Удалить
+                        </button>
 
                         <button type="button"
                                 class="conf-step__button conf-step__button-regular popup-close">

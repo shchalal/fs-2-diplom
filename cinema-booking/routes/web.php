@@ -103,6 +103,9 @@ Route::middleware(['auth', 'isAdmin'])->prefix('admin')->group(function () {
     Route::get('/sessions/{session}/edit', [MovieSessionController::class, 'edit'])->name('admin.sessions.edit');
     Route::put('/sessions/{session}', [MovieSessionController::class, 'update'])->name('admin.sessions.update');
     Route::delete('/sessions/{session}', [MovieSessionController::class, 'destroy'])->name('admin.sessions.destroy');
+    Route::post('/open-sales', [AdminDashboardController::class, 'openSales'])
+    ->name('admin.sales.open');
+
 
 
     Route::get('/debug/fill-seats-7', function () {
