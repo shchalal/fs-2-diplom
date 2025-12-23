@@ -12,7 +12,7 @@
             </div>
 
             <div class="popup__wrapper">
-                <form action="{{ route('admin.movies.store') }}" method="POST" enctype="multipart/form-data">
+                <form id="add-movie-form" enctype="multipart/form-data">
                     @csrf
 
                     <label class="conf-step__label conf-step__label-fullsize">
@@ -36,8 +36,11 @@
                     </label>
 
                     <div class="conf-step__buttons text-center">
-                        <input type="submit" value="Добавить фильм"
-                               class="conf-step__button conf-step__button-accent">
+                        <button type="button"
+                                id="submit-add-movie"
+                                class="conf-step__button conf-step__button-accent">
+                            Добавить фильм
+                        </button>
                         <button type="button" class="conf-step__button conf-step__button-regular popup-close">
                             Отмена
                         </button>

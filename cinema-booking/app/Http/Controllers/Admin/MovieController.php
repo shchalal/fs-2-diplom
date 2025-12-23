@@ -37,8 +37,10 @@ class MovieController extends Controller
             $data['poster_url'] = $request->file('poster')->store('posters', 'public');
         }
 
-        Movie::create($data);
-
+        $movie = Movie::create($data);
+        if ($request->expectsJson()) {
+            return response()->json($movie, 201);
+        }
         return redirect()->route('admin.dashboard')->with('success', 'Фильм создан');
     }
 

@@ -14,11 +14,11 @@
     <script>
         alert("{{ session('error') }}");
     </script>
+    @endif
     @if (session('success'))
         <script>
             alert("{{ session('success') }}");
         </script>
-@endif
 @endif
     {{-- ========================================================= --}}
     {{-- БЛОК 1 — УПРАВЛЕНИЕ ЗАЛАМИ --}}
@@ -395,7 +395,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const hallScheme = document.getElementById("hallScheme");
     const saveBtn    = document.getElementById("saveConfig");
 
-    // { hallId: { seatId: "vip" | "regular" | "disabled" } }
+   
     let changedSeats = {};
 
     let currentHallId = halls.length > 0 ? halls[0].id : null;
@@ -614,6 +614,86 @@ document.addEventListener("DOMContentLoaded", () => {
     /* ------------------------------- */
     /* 4) Сетка сеансов: выбор/удаление фильма */
     /* ------------------------------- */
+    const addMovieForm = document.getElementById('add-movie-form');
+    const addMovieBtn  = document.getElementById('submit-add-movie');
+    addMovieBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    const fd = new FormData(addMovieForm);
+
+    const response = await fetch('/admin/movies', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: fd
+    });
+
+    if (response.status === 422) {
+        const data = await response.json();
+        alert(Object.values(data.errors)[0][0]);
+        return;
+    }
+
+    if (!response.ok) {
+        alert('Ошибка при добавлении фильма');
+        return;
+    }
+
+    const movie = await response.json();
+
+    document.querySelector('.conf-step__movies')
+        .insertAdjacentHTML('beforeend', `
+            <div class="conf-step__movie" data-id="${movie.id}">
+                <h3 class="conf-step__movie-title">${movie.title}</h3>
+                <p class="conf-step__movie-duration">${movie.duration} минут</p>
+            </div>
+        `);
+
+    addMovieForm.reset();
+    document.getElementById('popup-add-movie').classList.remove('active');
+});
+    const addSeanceForm = document.getElementById('add-seance-form');
+
+const addSeanceBtn  = document.getElementById('submit-add-seance');
+
+if (addSeanceBtn && addSeanceForm) {
+    addSeanceBtn.addEventListener('click', async () => {
+
+        const fd = new FormData(addSeanceForm);
+
+        const response = await fetch('/admin/sessions', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: fd
+        });
+
+     
+        if (response.status === 422) {
+            const data = await response.json();
+            alert(data.message ?? 'Ошибка валидации');
+            return;
+        }
+
+        if (!response.ok) {
+            alert('Ошибка при добавлении сеанса');
+            return;
+        }
+
+      
+        document.getElementById('popup-add-seance').classList.remove('active');
+        addSeanceForm.reset();
+        location.reload();
+    });
+}
+
 
     let selectedMovieId = null;
 
@@ -624,6 +704,32 @@ document.addEventListener("DOMContentLoaded", () => {
             selectedMovieId = el.dataset.id;
         });
     });
+    const deleteSeanceForm = document.getElementById('delete-seance-form');
+
+if (deleteSeanceForm) {
+    deleteSeanceForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const action = deleteSeanceForm.action;
+
+        const response = await fetch(action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: new URLSearchParams({ _method: 'DELETE' })
+        });
+
+        if (!response.ok) {
+            alert('Ошибка удаления сеанса');
+            return;
+        }
+
+        document.getElementById('popup-delete-seance').classList.remove('active');
+        location.reload();
+    });
+}
 
     const deleteMovieBtn = document.getElementById('deleteMovieBtn');
     if (deleteMovieBtn) {
@@ -636,11 +742,14 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!confirm("Удалить выбранный фильм?")) return;
 
             fetch(`/admin/movies/${selectedMovieId}`, {
-                method: "DELETE",
+                method: "POST",
                 headers: {
                     "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
                     "Accept": "application/json"
-                }
+                },
+                body: new URLSearchParams({
+                    _method: 'DELETE'
+                })
             })
             .then(response => {
                 if (!response.ok) {

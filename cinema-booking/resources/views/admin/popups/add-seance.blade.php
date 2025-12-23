@@ -12,7 +12,7 @@
             </div>
 
             <div class="popup__wrapper">
-                <form action="{{ route('admin.sessions.store') }}" method="POST">
+               <form id="add-seance-form">
                     @csrf
 
                     <label class="conf-step__label conf-step__label-fullsize">
@@ -63,8 +63,11 @@
                     </label>
 
                     <div class="conf-step__buttons text-center">
-                        <input type="submit" value="Добавить"
-                               class="conf-step__button conf-step__button-accent">
+                        <button type="button"
+                                id="submit-add-seance"
+                                class="conf-step__button conf-step__button-accent">
+                            Добавить
+                        </button>
 
                         <button type="button"
                                 class="conf-step__button conf-step__button-regular popup-close">
