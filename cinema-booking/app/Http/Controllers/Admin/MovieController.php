@@ -72,9 +72,14 @@ class MovieController extends Controller
     }
 
   
-    public function destroy(Movie $movie)
+   public function destroy(Movie $movie)
     {
+    
+        $movie->sessions()->delete();
+
+        
         $movie->delete();
-        return back()->with('success', 'Фильм удалён');
+
+        return redirect()->route('admin.movies.index');
     }
 }

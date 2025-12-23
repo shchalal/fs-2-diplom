@@ -113,7 +113,10 @@
 
                                 <li class="movie-seances__time-block">
                                     <a class="movie-seances__time"
-                                       href="{{ route('client.hall', ['session' => $session->id]) }}">
+                                    href="{{ route('client.hall', [
+                                        'session' => $session->id,
+                                        'date' => $date
+                                    ]) }}">
                                         {{ $time }}
                                     </a>
                                 </li>

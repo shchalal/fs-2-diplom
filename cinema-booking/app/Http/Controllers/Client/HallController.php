@@ -11,6 +11,7 @@ class HallController extends Controller
 {
     public function index($sessionId)
     {
+        $date = request('date');
 
         $session = MovieSession::with(['movie', 'hall'])
             ->findOrFail($sessionId);
@@ -23,6 +24,7 @@ class HallController extends Controller
 
     
         $takenSeats = Ticket::where('session_id', $sessionId)
+            ->where('ticket_date', $date)
             ->pluck('seat_id')
             ->toArray();
 
@@ -31,6 +33,8 @@ class HallController extends Controller
             'seats'       => $seats,
             'takenSeats'  => $takenSeats,
             'prices'      => $session->hall->price,
+            'date'        => $date,
         ]);
+
     }
 }

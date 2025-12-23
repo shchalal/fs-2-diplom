@@ -122,10 +122,12 @@ class MovieSessionControllerTest extends TestCase
         $response = $this->delete(route('admin.sessions.destroy', $session->id));
 
      
-        $response->assertRedirect('/');
+       $response->assertRedirect(route('admin.dashboard'));
 
         $this->assertDatabaseMissing('movie_sessions', [
-            'id' => $session->id,
+            'movie_id' => $session->movie_id,
+            'hall_id'  => $session->hall_id,
+            'start_time' => $session->start_time,
         ]);
     }
 }

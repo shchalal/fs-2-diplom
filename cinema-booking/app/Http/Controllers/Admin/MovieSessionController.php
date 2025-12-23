@@ -167,9 +167,13 @@ class MovieSessionController extends Controller
     }
 
 
-    public function destroy(MovieSession $session)
+   public function destroy(MovieSession $session)
     {
-        $session->delete();
-        return back()->with('success', 'Сеанс удалён');
+        MovieSession::where('movie_id', $session->movie_id)
+            ->where('hall_id', $session->hall_id)
+            ->whereTime('start_time', \Carbon\Carbon::parse($session->start_time)->format('H:i:s'))
+            ->delete();
+
+        return redirect()->route('admin.dashboard')->with('success', 'Сеансы удалены');
     }
 }

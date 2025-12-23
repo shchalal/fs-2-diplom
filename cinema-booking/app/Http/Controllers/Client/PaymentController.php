@@ -18,6 +18,7 @@ class PaymentController extends Controller
         $request->validate([
             'session_id' => 'required|exists:movie_sessions,id',
             'seats'      => 'required',
+            'date' => 'required|date',
         ]);
 
         $session = MovieSession::with(['movie', 'hall', 'hall.price'])->findOrFail($request->session_id);
@@ -33,6 +34,7 @@ class PaymentController extends Controller
             'session' => $session,
             'seats'   => $seats,
             'seatIds' => $seatIds,
+            'date'    => $request->date,
         ]);
     }
 
@@ -53,6 +55,7 @@ class PaymentController extends Controller
 
         
         $taken = Ticket::where('session_id', $session->id)
+            ->where('ticket_date', $request->date)
             ->whereIn('seat_id', $seatIds)
             ->exists();
 
@@ -91,13 +94,15 @@ class PaymentController extends Controller
           
 
          
-            Ticket::create([
-                'session_id'   => $session->id,
-                'seat_id'      => $seatId,
-                'order_id'     => $orderId,
-                'booking_code' => $bookingCode,
-                'qr_path'      => $qrPath,
+           Ticket::create([
+                'session_id'  => $session->id,
+                'seat_id'     => $seatId,
+                'ticket_date' => $request->date,
+                'order_id'    => $orderId,
+                'booking_code'=> $bookingCode,
+                'qr_path'     => $qrPath,
             ]);
+
         }
 
         return redirect()->route('client.ticket', ['order' => $orderId]);

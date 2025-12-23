@@ -114,6 +114,7 @@
         {{--    ФОРМА ПОКУПКИ      --}}
         {{-- ===================== --}}
         <form id="paymentForm" action="{{ route('client.payment') }}" method="GET">
+           <input type="hidden" name="date" value="{{ $date }}">
 
             <input type="hidden" name="session_id" value="{{ $session->id }}">
             <input type="hidden" name="seats" id="seatsInput">

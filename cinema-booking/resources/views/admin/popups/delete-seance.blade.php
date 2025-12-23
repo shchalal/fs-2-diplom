@@ -13,22 +13,24 @@
 
             <div class="popup__wrapper">
 
-                <form id="delete-seance-form"method="POST" >
+                <form id="delete-seance-form" method="POST">
                     @csrf
                     @method('DELETE')
+
                     <p class="conf-step__paragraph">
                         Вы действительно хотите снять с сеанса фильм
                         <span id="delete-seance-movie-name">""</span>?
                     </p>
 
-                    <input type="hidden" id="delete-seance-id" name="id">
+                    <input type="hidden" id="delete-seance-id">
 
                     <div class="conf-step__buttons text-center">
-                        <button type="button"
-                                class="conf-step__button conf-step__button-accent"
-                                id="confirm-delete-seance">
+                    
+                        <button type="submit"
+                                class="conf-step__button conf-step__button-accent">
                             Удалить
                         </button>
+
 
                         <button type="button"
                                 class="conf-step__button conf-step__button-regular popup-close">

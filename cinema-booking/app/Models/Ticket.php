@@ -12,6 +12,7 @@ class Ticket extends Model
         'session_id',
         'seat_id',
         'booking_code',
+        'ticket_date', 
         'order_id',
         'qr_path',
     ];
