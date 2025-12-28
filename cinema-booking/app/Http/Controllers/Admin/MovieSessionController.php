@@ -31,68 +31,72 @@ class MovieSessionController extends Controller
     }
 
     public function store(Request $request)
-    {
-      
-        $validator = Validator::make($request->all(), [
-            'hall_id'    => 'required|exists:cinema_halls,id',
-            'movie_id'   => 'required|exists:movies,id',
-            'start_time' => 'required|date_format:H:i',
-        ]);
+{
+    $rules = [
+        'hall_id'    => 'required|exists:cinema_halls,id',
+        'movie_id'   => 'required|exists:movies,id',
+        'start_time' => 'required|date_format:H:i',
+    ];
+
+   
+    if ($request->expectsJson()) {
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             return response()->json([
                 'errors' => $validator->errors()
             ], 422);
         }
+    } else {
+        $request->validate($rules);
+    }
 
    
-        $hall = CinemaHall::findOrFail($request->hall_id);
+    $hall = CinemaHall::findOrFail($request->hall_id);
 
-        if (!$hall->is_active) {
-            return response()->json([
-                'message' => 'Зал закрыт. Нельзя добавить сеанс.'
-            ], 422);
-        }
+    if (!$hall->is_active) {
+        return $request->expectsJson()
+            ? response()->json(['message' => 'Зал закрыт'], 422)
+            : back()->withErrors(['hall_id' => 'Зал закрыт']);
+    }
 
-       
-        $movie = Movie::findOrFail($request->movie_id);
-
-        $start = Carbon::today()->setTimeFromTimeString($request->start_time);
-        $end   = (clone $start)->addMinutes($movie->duration);
+    $movie = Movie::findOrFail($request->movie_id);
 
     
-        $existingSessions = MovieSession::where('hall_id', $hall->id)
-            ->where('session_date', $start->toDateString())
-            ->get();
-
-        foreach ($existingSessions as $sess) {
+    $start = now()->addDay()->setTimeFromTimeString($request->start_time);
+    $end   = (clone $start)->addMinutes($movie->duration);
 
    
-            if (!$sess->end_time) {
-                continue;
-            }
+    $existingSessions = MovieSession::where('hall_id', $hall->id)
+        ->where('session_date', $start->toDateString())
+        ->get();
 
-            $existingStart = Carbon::parse($sess->start_time);
-            $existingEnd   = Carbon::parse($sess->end_time);
-
-            if ($start < $existingEnd && $end > $existingStart) {
-                return response()->json([
-                    'message' => 'Новый сеанс пересекается с уже существующим'
-                ], 422);
-            }
+    foreach ($existingSessions as $sess) {
+        if (
+            $start < Carbon::parse($sess->end_time) &&
+            $end > Carbon::parse($sess->start_time)
+        ) {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Сеанс пересекается'], 422)
+                : back()->withErrors(['start_time' => 'Сеанс пересекается']);
         }
-
-      
-        $session = MovieSession::create([
-            'hall_id'      => $hall->id,
-            'movie_id'     => $movie->id,
-            'session_date' => $start->toDateString(),
-            'start_time'   => $start,
-            'end_time'     => $end,
-        ]);
-
-        return response()->json($session);
     }
+
+
+    MovieSession::create([
+        'hall_id'      => $hall->id,
+        'movie_id'     => $movie->id,
+        'session_date' => $start->toDateString(),
+        'start_time'   => $start,
+        'end_time'     => $end,
+    ]);
+
+   
+    return $request->expectsJson()
+        ? response()->json(['success' => true], 201)
+        : redirect()->route('admin.dashboard');
+}
+
 
     public function edit(MovieSession $session)
     {

@@ -20,11 +20,11 @@ class HomeController extends Controller
     }
 
    
-    $movies = Movie::with(['sessions' => function ($q) use ($date) {
-            $q->where('session_date', $date)
-              ->orderBy('start_time');
-        }])
-        ->get();
+     $movies = Movie::with(['sessions' => function ($q) use ($date) {
+        $q->whereDate('session_date', '>=', $date)
+        ->orderBy('session_date')
+        ->orderBy('start_time');
+    }])->get();
 
     $halls = CinemaHall::where('is_active', 1)->get();
 

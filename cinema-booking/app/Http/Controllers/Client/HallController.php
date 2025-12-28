@@ -11,7 +11,7 @@ class HallController extends Controller
 {
     public function index($sessionId)
     {
-        $date = request('date');
+        $date = request('date', now()->toDateString());
 
         $session = MovieSession::with(['movie', 'hall'])
             ->findOrFail($sessionId);
