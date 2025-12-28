@@ -17,8 +17,7 @@ class BookingTest extends TestCase
 {
     use RefreshDatabase;
 
-
-    public function guest_can_book_tickets_and_qr_codes_are_generated()
+    public function test_guest_can_book_tickets_and_qr_codes_are_generated()
     {
         Storage::fake('public');
 
@@ -34,14 +33,12 @@ class BookingTest extends TestCase
         $seats = Seat::where('hall_id', $hall->id)->take(2)->get();
         $seatIds = $seats->pluck('id')->toArray();
 
-    
         HallPrice::factory()->create([
             'hall_id' => $hall->id,
             'regular_price' => 300,
             'vip_price' => 600,
         ]);
 
-        
         $movie = Movie::factory()->create();
 
         $session = MovieSession::factory()->create([
@@ -53,7 +50,6 @@ class BookingTest extends TestCase
             'price_vip' => 600,
         ]);
 
-       
         $response = $this->post(route('client.payment.store'), [
             'session_id' => $session->id,
             'seats'      => json_encode($seatIds),
@@ -63,7 +59,6 @@ class BookingTest extends TestCase
         $response->assertRedirect();
         $this->assertStringContainsString('/ticket/', $response->getTargetUrl());
 
-      
         $this->assertDatabaseCount('tickets', 2);
 
         $tickets = Ticket::all();
@@ -78,14 +73,12 @@ class BookingTest extends TestCase
         }
     }
 
-   
-    public function seat_cannot_be_double_booked()
+    public function test_seat_cannot_be_double_booked()
     {
         Storage::fake('public');
 
         $date = now()->toDateString();
 
-    
         $hall = CinemaHall::factory()->create([
             'rows' => 3,
             'seats_per_row' => 5,
@@ -95,7 +88,6 @@ class BookingTest extends TestCase
 
         $seat = Seat::where('hall_id', $hall->id)->first();
 
-     
         $movie = Movie::factory()->create();
 
         $session = MovieSession::factory()->create([
@@ -109,14 +101,12 @@ class BookingTest extends TestCase
             'ticket_date' => $date,
         ]);
 
-      
         $response = $this->post(route('client.payment.store'), [
             'session_id' => $session->id,
             'seats'      => json_encode([$seat->id]),
             'date'       => $date,
         ]);
 
-        
         $response->assertSessionHasErrors();
         $this->assertDatabaseCount('tickets', 1);
     }

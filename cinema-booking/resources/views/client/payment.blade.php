@@ -55,6 +55,7 @@
             </p>
 
             {{-- Начало сеанса --}}
+           
             <p class="ticket__info">
                 Начало сеанса:
                 <span class="ticket__details ticket__start">
@@ -63,15 +64,7 @@
             </p>
 
             {{-- Стоимость --}}
-           @php
-                $regularPrice = optional($session->hall->price)->regular_price ?? 0;
-                $vipPrice     = optional($session->hall->price)->vip_price ?? 0;
-
-                $total = 0;
-                foreach ($seats as $seat) {
-                    $total += $seat->seat_type === 'vip' ? $vipPrice : $regularPrice;
-                }
-            @endphp
+        
 
             <p class="ticket__info">
                 Стоимость:
@@ -80,7 +73,7 @@
                 </span>
                 рублей
             </p>
-
+          
             {{-- Форма "Получить код бронирования" --}}
             <form class="ticket__buy" method="POST" action="{{ route('client.payment.store') }}">
                 @csrf

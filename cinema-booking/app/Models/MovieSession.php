@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Seat;
+use Illuminate\Support\Collection;
 
 class MovieSession extends Model
 {
@@ -49,5 +51,24 @@ class MovieSession extends Model
     public function getEndTimeFormattedAttribute(): string
     {
         return substr($this->end_time, 0, 5);
+    }
+    public function priceForSeat(Seat $seat): int
+    {
+        if ($seat->seat_type === 'vip') {
+            $price = $this->price_vip > 0
+                ? $this->price_vip
+                : optional($this->hall->price)->vip_price;
+        } else {
+            $price = $this->price_regular > 0
+                ? $this->price_regular
+                : optional($this->hall->price)->regular_price;
+        }
+
+        return $price ?? 0;
+    }
+
+    public function totalPriceForSeats(Collection $seats): int
+    {
+        return $seats->sum(fn (Seat $seat) => $this->priceForSeat($seat));
     }
 }
