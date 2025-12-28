@@ -13,8 +13,10 @@ class HallController extends Controller
     {
         $date = request('date', now()->toDateString());
 
-        $session = MovieSession::with(['movie', 'hall'])
-            ->findOrFail($sessionId);
+        $session = MovieSession::with([
+            'movie',
+            'hall.price', 
+        ])->findOrFail($sessionId);
 
 
         $seats = Seat::where('hall_id', $session->hall_id)

@@ -44,6 +44,7 @@ class PaymentController extends Controller
         $request->validate([
             'session_id' => 'required|exists:movie_sessions,id',
             'seats'      => 'required',
+            'date'       => 'required|date',
         ]);
 
         $session = MovieSession::with('hall')->findOrFail($request->session_id);

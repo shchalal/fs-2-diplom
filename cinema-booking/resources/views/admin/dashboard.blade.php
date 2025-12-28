@@ -282,18 +282,18 @@
                         <div class="conf-step__seances-timeline" data-hall="{{ $hall->id }}">
 
                             @php
-                                // 1 минута = 0.5 пикселя, как в макете
+                                
                                 $pxPerMinute = 0.5;
                             @endphp
 
                             @foreach ($sessions->where('hall_id', $hall->id) as $session)
                                 @php
-                                    // start_time хранится как DATETIME (YYYY-mm-dd HH:ii:ss)
-                                    $timePart = substr($session->start_time, 11, 5); // "HH:MM"
+                                  
+                                    [$hours, $minutes] = explode(':', $session->start_time);
 
-                                    $startMinutes = intval(substr($timePart, 0, 2)) * 60
-                                                  + intval(substr($timePart, 3, 2));
+                                    $startMinutes = ((int)$hours * 60) + (int)$minutes;
 
+                                    
                                     $left  = $startMinutes * $pxPerMinute;
                                     $width = $session->movie->duration * $pxPerMinute;
 

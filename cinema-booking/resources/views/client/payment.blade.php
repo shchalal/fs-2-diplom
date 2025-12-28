@@ -63,9 +63,9 @@
             </p>
 
             {{-- Стоимость --}}
-            @php
-                $regularPrice = $session->price_regular ?? $session->hall->price->regular_price ?? 0;
-                $vipPrice     = $session->price_vip     ?? $session->hall->price->vip_price     ?? 0;
+           @php
+                $regularPrice = optional($session->hall->price)->regular_price ?? 0;
+                $vipPrice     = optional($session->hall->price)->vip_price ?? 0;
 
                 $total = 0;
                 foreach ($seats as $seat) {
@@ -87,7 +87,7 @@
 
                 <input type="hidden" name="session_id" value="{{ $session->id }}">
                 <input type="hidden" name="seats" value="{{ json_encode($seatIds) }}">
-
+                <input type="hidden" name="date" value="{{ $date }}">
                 <button class="acceptin-button" type="submit">
                     Получить код бронирования
                 </button>

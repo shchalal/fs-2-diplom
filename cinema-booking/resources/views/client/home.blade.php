@@ -92,40 +92,38 @@
                 </div>
             </div>
 
-            {{-- ==== Сеансы по залам ==== --}}
+        
             @foreach ($halls as $hall)
 
                 @php
-                    $sessionsForHall = $movie->sessions->where('hall_id', $hall->id);
-                @endphp
+                        $sessionsForHall = $movie->sessions
+                            ->where('hall_id', $hall->id)
+                            ->sortBy('start_time');
+                    @endphp
 
-                @if ($sessionsForHall->count() > 0)
-                    <div class="movie-seances__hall">
-                        <h3 class="movie-seances__hall-title">{{ $hall->name }}</h3>
+                    @if ($sessionsForHall->count() > 0)
+                        <div class="movie-seances__hall">
+                            <h3 class="movie-seances__hall-title">{{ $hall->name }}</h3>
 
-                        <ul class="movie-seances__list">
+                            <ul class="movie-seances__list">
 
-                            @foreach ($sessionsForHall as $session)
+                                @foreach ($sessionsForHall as $session)
 
-                                @php
-                                    $time = \Carbon\Carbon::parse($session->start_time)->format('H:i');
-                                @endphp
+                                    <li class="movie-seances__time-block">
+                                        <a class="movie-seances__time"
+                                        href="{{ route('client.hall', [
+                                            'session' => $session->id,
+                                            'date' => $date
+                                        ]) }}">
+                                            {{ $session->start_time_formatted }}
+                                        </a>
+                                    </li>
 
-                                <li class="movie-seances__time-block">
-                                    <a class="movie-seances__time"
-                                    href="{{ route('client.hall', [
-                                        'session' => $session->id,
-                                        'date' => $date
-                                    ]) }}">
-                                        {{ $time }}
-                                    </a>
-                                </li>
+                                @endforeach
 
-                            @endforeach
-
-                        </ul>
-                    </div>
-                @endif
+                            </ul>
+                        </div>
+                    @endif
 
             @endforeach
 
