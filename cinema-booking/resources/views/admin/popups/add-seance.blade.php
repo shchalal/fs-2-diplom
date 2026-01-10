@@ -61,7 +61,9 @@
                             placeholder="По умолчанию из конфигурации зала"
                         >
                     </label>
-
+                    <p id="add-seance-error"
+                    style="display:none; color:red; margin-bottom:10px;">
+                    </p>
                     <div class="conf-step__buttons text-center">
                         <button type="button"
                                 id="submit-add-seance"

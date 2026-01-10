@@ -634,8 +634,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (response.status === 422) {
         const data = await response.json();
-        alert(Object.values(data.errors)[0][0]);
-        return;
+
+        const errorBox = document.getElementById('add-seance-error');
+        if (errorBox) {
+            errorBox.textContent = data.message || 'Сеанс пересекается';
+            errorBox.style.display = 'block';
+        }
+
+        return; 
     }
 
     if (!response.ok) {
@@ -675,11 +681,18 @@ if (addSeanceBtn && addSeanceForm) {
             body: fd
         });
 
-     
+        const errorBox = document.getElementById('add-seance-error');
+
+        
         if (response.status === 422) {
             const data = await response.json();
-            alert(data.message ?? 'Ошибка валидации');
-            return;
+
+            if (errorBox) {
+                errorBox.textContent = data.message || 'Сеанс пересекается с существующим';
+                errorBox.style.display = 'block';
+            }
+
+            return; 
         }
 
         if (!response.ok) {
@@ -687,12 +700,18 @@ if (addSeanceBtn && addSeanceForm) {
             return;
         }
 
-      
+       
+        if (errorBox) {
+            errorBox.style.display = 'none';
+            errorBox.textContent = '';
+        }
+
         document.getElementById('popup-add-seance').classList.remove('active');
         addSeanceForm.reset();
         location.reload();
     });
 }
+
 
 
     let selectedMovieId = null;

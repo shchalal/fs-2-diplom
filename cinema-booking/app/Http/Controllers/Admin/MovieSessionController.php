@@ -22,7 +22,9 @@ class MovieSessionController extends Controller
 
         $hall = CinemaHall::findOrFail($request->hall_id);
         if (!$hall->is_active) {
-            return back()->withErrors(['hall_id' => 'Зал закрыт']);
+            return response()->json([
+                'message' => 'Зал закрыт. Нельзя добавлять сеанс'
+            ], 422);
         }
 
         $movie = Movie::findOrFail($request->movie_id);
@@ -38,10 +40,10 @@ class MovieSessionController extends Controller
             $sEnd   = Carbon::createFromFormat('H:i:s', $session->end_time);
 
             if ($start < $sEnd && $end > $sStart) {
-                return back()->withErrors([
-                    'start_time' => 'Сеанс пересекается с другим в этом зале',
-                ]);
-            }
+            return response()->json([
+                'message' => 'Сеанс пересекается с другим в этом зале'
+            ], 422);
+        }
         }
 
         MovieSession::create([
